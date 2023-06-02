@@ -1,0 +1,88 @@
+name: Deploy Dart Frog API
+
+on:
+  workflow_call:
+    inputs:
+      project_id:
+        description: "The GCP id the action should deploy to"
+        required: true
+        type: string
+      service:
+        description: "The name of the service being deployed"
+        required: true
+        type: string
+      region:
+        description: "The region to deploy this service to"
+        required: true
+        type: string
+      environment:
+        description: "The environment this service exists in."
+        required: false
+        type: string
+      flags:
+        description: "Additional flags to add to gcloud run deploy."
+        required: false
+        type: string
+      code_path:
+        description: "Path where the Dart Frog API is located."
+        required: false
+        type: string
+    secrets:
+      GCP_SA_KEY:
+        required: true
+    outputs:
+      url:
+        description: "The URL of the deployed service"
+        value: ${{ jobs.build-and-deploy.outputs.url }}
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Api
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.output.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          project_id: ${{ inputs.project_id }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Set Up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install Dart Frog
+        run: dart pub global activate dart_frog_cli
+
+      - name: Dart Frog Build
+        run: dart_frog build
+        working-directory: ${{ inputs.code_path }}
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker
+
+      - name: Build and Push Container
+        run: |-
+          docker build -t gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }} build
+          docker push gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }}
+        working-directory: ${{ inputs.code_path }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v0
+        with:
+          service: ${{ inputs.service }}
+          image: gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }}
+          region: ${{ inputs.region }}
+          env_vars: ENVIRONMENT=${{inputs.environment}}
+          flags: ${{ inputs.flags }}
+
+      - name: Set Output
+        id: output
+        run: echo "url=${{ steps.deploy.outputs.url }}" >> $GITHUB_OUTPUT
