@@ -27,6 +27,11 @@ on:
         description: "Path where the Dart Frog API is located."
         required: false
         type: string
+      dart_sdk:
+        description: "The Dart version used to build this API"
+        required: true
+        type: string
+        default: "stable"
     secrets:
       GCP_SA_KEY:
         required: true
@@ -55,7 +60,7 @@ jobs:
       - name: Set Up Dart
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: stable
+          sdk: ${{ inputs.dart_sdk }}
 
       - name: Install Dart Frog
         run: dart pub global activate dart_frog_cli
