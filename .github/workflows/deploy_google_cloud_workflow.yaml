@@ -1,0 +1,52 @@
+name: Deploy Google Cloud Workflow
+
+on:
+  workflow_call:
+    inputs:
+      project_id:
+        description: "The GCP id the workflow should deploy to."
+        required: true
+        type: string
+      name:
+        description: "The name of the workflow being deployed."
+        required: true
+        type: string
+      filename:
+        description: "The filename of the workflow being deployed."
+        required: true
+        type: string
+      directory:
+        description: "The directory of the workflow file."
+        required: true
+        type: string
+      location:
+        description: "The location to deploy this workflow to."
+        required: true
+        type: string
+      service_account:
+        description: "The service account this workflow should run as."
+        required: true
+        type: string
+      
+    secrets:
+      GCP_SA_KEY:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          project_id: ${{ inputs.project_id }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Deploy Workflow
+        run: gcloud workflows deploy ${{ inputs.name }} --source ${{ inputs.filename }} --service-account ${{ inputs.service_account }} --project ${{ inputs.project_id }} --location ${{ inputs.location }}
+        working-directory: ${{ inputs.directory }}
