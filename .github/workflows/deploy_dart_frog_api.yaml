@@ -80,7 +80,7 @@ jobs:
 
       - name: Deploy to Cloud Run
         id: deploy
-        uses: google-github-actions/deploy-cloudrun@v0
+        uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ inputs.service }}
           image: gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }}
