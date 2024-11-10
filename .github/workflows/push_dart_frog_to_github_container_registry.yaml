@@ -1,0 +1,52 @@
+name: Deploy Dart Frog API
+
+on:
+  workflow_call:
+    inputs:
+      code_path:
+        description: "Path where the Dart Frog API is located."
+        required: false
+        type: string
+      dart_sdk:
+        description: "The Dart version used to build this API"
+        required: true
+        type: string
+        default: "stable"
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Api
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ inputs.dart_sdk }}
+
+      - name: Install Dart Frog
+        run: dart pub global activate dart_frog_cli
+
+      - name: Dart Frog Build
+        run: dart_frog build
+        working-directory: ${{ inputs.code_path }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Container
+        run: |-
+          docker build -t gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }} build
+          docker push gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }}
+        working-directory: ${{ inputs.code_path }}
