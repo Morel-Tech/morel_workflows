@@ -12,6 +12,15 @@ on:
         required: true
         type: string
         default: "stable"
+      namespace:
+        description: "The user or org to publish this image"
+        required: true
+        type: string
+      image:
+        description: "The name of this image"
+        required: true
+        type: string
+      
 
 jobs:
   build-and-deploy:
@@ -47,6 +56,6 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build -t gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }} build
-          docker push gcr.io/${{ inputs.project_id }}/${{ inputs.service }}:${{  github.sha }}
+          docker build -t ghcr.io/${{ inputs.namespace }}/${{ inputs.image }}:${{  github.sha }} build
+          docker push ghcr.io/${{ inputs.namespace }}/${{ inputs.image }}:${{  github.sha }}
         working-directory: ${{ inputs.code_path }}
