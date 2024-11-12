@@ -20,6 +20,11 @@ on:
         description: "The name of this image"
         required: true
         type: string
+      tag:
+        descripition: "The tag for this image"
+        required: true
+        type: string
+        default: ${{ github.sha }}
       
 
 jobs:
@@ -56,6 +61,6 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build -t ghcr.io/${{ inputs.namespace }}/${{ inputs.image }}:${{  github.sha }} build
-          docker push ghcr.io/${{ inputs.namespace }}/${{ inputs.image }}:${{  github.sha }}
+          docker build -t ghcr.io/${{ inputs.namespace }}/${{ inputs.image }}:${{  inputs.tag }} build
+          docker push ghcr.io/${{ inputs.namespace }}/${{ inputs.image }}:${{ inputs.tag }}
         working-directory: ${{ inputs.code_path }}
